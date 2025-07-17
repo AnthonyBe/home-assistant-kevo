@@ -1,6 +1,7 @@
 """The Kevo Plus integration."""
 from __future__ import annotations
-
+from homeassistant.helpers.aiohttp_client import async_get_ssl_context
+import httpx
 import asyncio
 import hashlib
 import logging
@@ -31,7 +32,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     password = entry.data.get(CONF_PASSWORD)
     device_id = uuid.UUID(bytes=hashlib.md5(password.encode()).digest())
-    client = KevoApi(device_id)
+    ssl_context = await async_get_ssl_context(hass)
+    httpx_client = httpx.AsyncClient(verify=ssl_context)
+    client = KevoApi(device_id, client=httpx_client, ssl_context=ssl_context)
 
     try:
         await client.login(entry.data.get(CONF_USERNAME), password)
